@@ -1,6 +1,6 @@
 # CTF Platform
 
-A full-stack Capture The Flag (CTF) platform developed as a 5-unit final school project.
+A full-stack Capture The Flag (CTF) platform.
 
 The system allows users to register, solve cybersecurity challenges, submit flags, track scores, and compete on a live scoreboard. Administrators can create and manage challenges through a dedicated interface.
 
