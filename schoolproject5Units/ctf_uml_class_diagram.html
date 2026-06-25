@@ -1,0 +1,151 @@
+<div id="uml" style="padding:1rem 0"></div>
+<script type="module">
+import mermaid from 'https://esm.sh/mermaid@11/dist/mermaid.esm.min.mjs';
+const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+await document.fonts.ready;
+mermaid.initialize({
+  startOnLoad: false,
+  theme: 'base',
+  fontFamily: '"Anthropic Sans", sans-serif',
+  themeVariables: {
+    darkMode: dark,
+    fontSize: '13px',
+    fontFamily: '"Anthropic Sans", sans-serif',
+    lineColor: dark ? '#9c9a92' : '#73726c',
+    textColor: dark ? '#c2c0b6' : '#3d3d3a',
+    primaryColor: dark ? '#3C3489' : '#EEEDFE',
+    primaryTextColor: dark ? '#CECBF6' : '#26215C',
+    primaryBorderColor: dark ? '#7F77DD' : '#534AB7',
+    secondaryColor: dark ? '#085041' : '#E1F5EE',
+    tertiaryColor: dark ? '#633806' : '#FAEEDA',
+  },
+});
+const diagram = `classDiagram
+  class User {
+    +int Id
+    +string Username
+    +string PasswordHash
+    +UserRole Role
+    +int Score
+    +DateTime RegisteredAt
+    +Login() bool
+    +UpdateScore(int points)
+  }
+
+  class UserRole {
+    <<enumeration>>
+    Player
+    Creator
+    Admin
+  }
+
+  class Challenge {
+    +int Id
+    +string Title
+    +string Description
+    +string EncryptedFlag
+    +int Points
+    +DifficultyLevel Difficulty
+    +int CategoryId
+    +int CreatorId
+    +bool IsActive
+    +ValidateFlag(string input) bool
+    +GetHints() List~Hint~
+  }
+
+  class DifficultyLevel {
+    <<enumeration>>
+    Easy
+    Medium
+    Hard
+    Insane
+  }
+
+  class Category {
+    +int Id
+    +string Name
+    +string Description
+    +GetChallenges() List~Challenge~
+  }
+
+  class Submission {
+    +int Id
+    +int UserId
+    +int ChallengeId
+    +string SubmittedFlag
+    +bool IsCorrect
+    +DateTime SubmittedAt
+  }
+
+  class Hint {
+    +int Id
+    +int ChallengeId
+    +string Content
+    +int PointCost
+  }
+
+  class ChallengeFile {
+    +int Id
+    +int ChallengeId
+    +string FileName
+    +byte[] FileData
+    +string FileType
+    +Upload()
+    +Download() byte[]
+  }
+
+  class TcpServer {
+    +int Port
+    +List~TcpClient~ Clients
+    +delegate RequestHandler
+    +delegate ScoreUpdated
+    +StartAsync()
+    +BroadcastToAll(string msg)
+    +HandleClientAsync(TcpClient c)
+  }
+
+  class RequestHandler {
+    +HandleLogin(Request r) Response
+    +HandleSubmit(Request r) Response
+    +HandleGetChallenges(Request r) Response
+    +HandleUploadFile(Request r) Response
+  }
+
+  class CryptoService {
+    +EncryptFlag(string flag) string
+    +DecryptFlag(string enc) string
+    +HashPassword(string pwd) string
+    +VerifyPassword(string pwd, string hash) bool
+  }
+
+  class ValidationService {
+    +ValidateUsername(string u) bool
+    +ValidateFlag(string f) bool
+    +ValidateFileType(string ext) bool
+  }
+
+  class DatabaseService {
+    +GetUserById(int id) User
+    +GetAllChallenges() List~Challenge~
+    +InsertSubmission(Submission s)
+    +GetScoreboard() List~User~
+    +ExecuteQuery(string sql, params)
+  }
+
+  User --> UserRole : has
+  Challenge --> DifficultyLevel : has
+  Challenge --> Category : belongs to
+  Challenge --> User : created by
+  Challenge "1" --> "*" Hint : has
+  Challenge "1" --> "*" ChallengeFile : has
+  Submission --> User : made by
+  Submission --> Challenge : targets
+  TcpServer --> RequestHandler : uses
+  TcpServer --> DatabaseService : uses
+  RequestHandler --> CryptoService : uses
+  RequestHandler --> ValidationService : uses
+  RequestHandler --> DatabaseService : uses
+`;
+const { svg } = await mermaid.render('uml-svg', diagram);
+document.getElementById('uml').innerHTML = svg;
+</script>
