@@ -42,6 +42,12 @@ namespace CTF.Server
             {
                 Log($"[NEW CHALLENGE] {title}");
             };
+
+            _handler.OnChatMessage += async (chatMsg) =>
+            {
+                string json = JsonSerializer.Serialize(chatMsg, _jsonOptions);
+                await BroadcastAsync($"CHAT:{json}");
+            };
         }
 
         public async Task StartAsync()
@@ -49,6 +55,7 @@ namespace CTF.Server
             _listener = new TcpListener(IPAddress.Any, _port);
             _listener.Start();
             Log($"[SERVER] Listening on port {_port}...");
+            Log($"[SERVER] Listening on IP: {GetLocalIPAddress()}");
 
             while (true)
             {
@@ -62,6 +69,16 @@ namespace CTF.Server
             }
         }
 
+        private static string GetLocalIPAddress()
+        {
+            var host = Dns.GetHostEntry(Dns.GetHostName());
+            foreach (var ip in host.AddressList)
+            {
+                if (ip.AddressFamily == AddressFamily.InterNetwork)
+                    return ip.ToString();
+            }
+            return "";
+        }
         private async Task HandleClientAsync(TcpClient client)
         {
             using NetworkStream stream = client.GetStream();
@@ -130,7 +147,27 @@ namespace CTF.Server
                 Log($"[SERVER] Client disconnected");
             }
         }
+        public async Task BroadcastAsync(string message)
+        {
+            byte[] messageBytes = Encoding.UTF8.GetBytes(message);
+            byte[] lengthBytes = BitConverter.GetBytes(messageBytes.Length);
 
+            List<TcpClient> clients;
+            lock (_clientsLock)
+                clients = new List<TcpClient>(_connectedClients);
+
+            foreach (TcpClient client in clients)
+            {
+                try
+                {
+                    NetworkStream stream = client.GetStream();
+                    await stream.WriteAsync(lengthBytes, 0, 4);
+                    await stream.WriteAsync(messageBytes, 0, messageBytes.Length);
+                    await stream.FlushAsync();
+                }
+                catch { }
+            }
+        }
         private static async Task SendResponseAsync(NetworkStream stream, Response response)
         {
             string json = JsonSerializer.Serialize(response, _jsonOptions);

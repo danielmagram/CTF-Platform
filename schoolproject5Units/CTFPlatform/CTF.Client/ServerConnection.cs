@@ -330,6 +330,35 @@ namespace CTF.Client
             return (response.Success, response.Message);
         }
 
+
+
+        // ==================== CHAT ====================
+
+        public async Task<(bool success, string message)> SendChatMessageAsync(string message)
+        {
+            Response response = await SendAndReceiveAsync(new Packet
+            {
+                Type = PacketType.SendChatMessage,
+                Token = Token,
+                Payload = JsonSerializer.Serialize(message, _jsonOptions)
+            });
+            return (response.Success, response.Message);
+        }
+
+
+
+    public async Task<List<ChatMessage>> GetNewMessagesAsync(int lastId)
+    {
+        Response response = await SendAndReceiveAsync(new Packet
+        {
+            Type = PacketType.GetNewMessages,
+            Token = Token,
+            Payload = JsonSerializer.Serialize(new GetNewMessagesRequest { LastId = lastId }, _jsonOptions)
+        });
+        if (!response.Success) return new();
+        return JsonSerializer.Deserialize<List<ChatMessage>>(response.Data, _jsonOptions) ?? new();
+    }
+
         // ==================== TCP HELPERS ====================
 
         private async Task<Response> SendAndReceiveAsync(Packet packet)

@@ -18,6 +18,8 @@ namespace CTF.Server
         // Delegate + Event — triggered when a new challenge is created
         public delegate void ChallengeCreatedHandler(string challengeTitle);
         public event ChallengeCreatedHandler? OnChallengeCreated;
+        public delegate void ChatMessageHandler(ChatMessage message);
+        public event ChatMessageHandler? OnChatMessage;
 
         public RequestHandler(DatabaseService db, SessionManager sessions)
         {
@@ -49,6 +51,8 @@ namespace CTF.Server
                 PacketType.DeleteChallenge => HandleDeleteChallenge(packet),
                 PacketType.GetAllUsers => HandleGetAllUsers(packet),
                 PacketType.ChangeUserRole => HandleChangeUserRole(packet),
+                PacketType.SendChatMessage => HandleSendChatMessage(packet),
+                PacketType.GetNewMessages => HandleGetNewMessages(packet),
                 _ => Error("Unknown request type")
             };
         }
@@ -409,6 +413,49 @@ namespace CTF.Server
 
             return Success(_db.GetAllUsers());
         }
+
+
+
+
+        // CHAT
+
+
+        private Response HandleGetNewMessages(Packet packet)
+        {
+            if (!_sessions.IsLoggedIn(packet.Token)) return Error("Not authenticated");
+
+            GetNewMessagesRequest? req = Deserialize<GetNewMessagesRequest>(packet.Payload);
+            if (req == null) return Error("Invalid request");
+
+            return Success(_db.GetNewMessages(req.LastId));
+        }
+        private Response HandleSendChatMessage(Packet packet)
+        {
+            User? user = _sessions.GetUser(packet.Token);
+            if (user == null) return Error("Not authenticated");
+
+            string? message = JsonSerializer.Deserialize<string>(packet.Payload);
+            if (string.IsNullOrWhiteSpace(message)) return Error("Empty message");
+            if (message.Length > 500) return Error("Message too long (max 500 chars)");
+
+            _db.SaveChatMessage(user.Id, user.Username, message);
+
+            ChatMessage chatMsg = new()
+            {
+                Username = user.Username,
+                Message = message,
+                SentAt = DateTime.UtcNow
+            };
+
+            OnChatMessage?.Invoke(chatMsg);
+
+            return Success("Sent");
+        }
+
+
+
+
+
 
         // ==================== HELPERS ====================
 

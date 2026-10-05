@@ -37,7 +37,12 @@
 
         // Server responses
         Success,
-        Error
+        Error,
+
+
+        // chat 
+        SendChatMessage,
+        GetNewMessages,
     }
 
     // Basic request
@@ -167,6 +172,19 @@
     public class DeleteHintRequest
     {
         public int HintId { get; set; }
+    }
+
+    public class ChatMessage
+    {
+        public int Id { get; set; }
+        public string Username { get; set; } = "";
+        public string Message { get; set; } = "";
+        public DateTime SentAt { get; set; }
+    }
+
+    public class GetNewMessagesRequest
+    {
+        public int LastId { get; set; }
     }
 
 }

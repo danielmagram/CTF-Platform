@@ -1,6 +1,7 @@
-﻿using Microsoft.Data.Sqlite;
-using CTF.Common.Models;
+﻿using CTF.Common.Models;
+using CTF.Common.Packets;
 using CTF.Common.Services;
+using Microsoft.Data.Sqlite;
 
 namespace CTF.Server.Database
 {
@@ -88,6 +89,14 @@ namespace CTF.Server.Database
                     FOREIGN KEY (UserId) REFERENCES Users(Id),
                     FOREIGN KEY (HintId) REFERENCES Hints(Id),
                     UNIQUE(UserId, HintId)
+                );
+                CREATE TABLE IF NOT EXISTS ChatMessages (
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    UserId INTEGER NOT NULL,
+                    Username TEXT NOT NULL,
+                    Message TEXT NOT NULL,
+                    SentAt TEXT NOT NULL,
+                    FOREIGN KEY (UserId) REFERENCES Users(Id)
                 );
             ";
 
@@ -636,5 +645,43 @@ namespace CTF.Server.Database
             IsActive = r.GetInt32(9) == 1,
             CreatedAt = DateTime.Parse(r.GetString(10))
         };
+
+        public void SaveChatMessage(int userId, string username, string message)
+        {
+            using SqliteConnection conn = new(_connectionString);
+            conn.Open();
+            using SqliteCommand cmd = new(@"
+        INSERT INTO ChatMessages (UserId, Username, Message, SentAt)
+        VALUES (@u, @name, @msg, @date)", conn);
+            cmd.Parameters.AddWithValue("@u", userId);
+            cmd.Parameters.AddWithValue("@name", username);
+            cmd.Parameters.AddWithValue("@msg", message);
+            cmd.Parameters.AddWithValue("@date", DateTime.UtcNow.ToString("o"));
+            cmd.ExecuteNonQuery();
+        }
+        public List<ChatMessage> GetNewMessages(int lastId)
+        {
+            using SqliteConnection conn = new(_connectionString);
+            conn.Open();
+            using SqliteCommand cmd = new(@"
+        SELECT Id, Username, Message, SentAt
+        FROM ChatMessages
+        WHERE Id > @lastId
+        ORDER BY Id ASC", conn);
+            cmd.Parameters.AddWithValue("@lastId", lastId);
+            using SqliteDataReader reader = cmd.ExecuteReader();
+            List<ChatMessage> messages = new();
+            while (reader.Read())
+                messages.Add(new ChatMessage
+                {
+                    Id = reader.GetInt32(0),
+                    Username = reader.GetString(1),
+                    Message = reader.GetString(2),
+                    SentAt = DateTime.Parse(reader.GetString(3))
+                });
+            return messages;
+        }
+
+
     }
 }

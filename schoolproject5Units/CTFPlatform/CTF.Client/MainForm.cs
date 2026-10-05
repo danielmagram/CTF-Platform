@@ -115,6 +115,8 @@ namespace CTF.Client
 
             AddNavButton(sidebar, "📊  Scoreboard", ref y,
                 () => OpenPanel(new ScoreboardForm(_server)));
+            AddNavButton(sidebar, "💬  Chat", ref y,
+                () => OpenPanel(new ChatForm(_server)));
 
             if (role == UserRole.Creator || role == UserRole.Admin)
                 AddNavButton(sidebar, "➕  Add Challenge", ref y,
@@ -221,6 +223,13 @@ namespace CTF.Client
                 string title = message["NEW_CHALLENGE:".Length..];
                 MessageBox.Show($"🚩 New challenge: {title}", "New Challenge!",
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            else if (message.StartsWith("CHAT:"))
+            {
+                // העבר ל-ChatForm אם פתוח
+                if (panelContent.Controls.Count > 0 &&
+                    panelContent.Controls[0] is ChatForm chat)
+                    chat.ReceiveBroadcast(message);
             }
         }
 
